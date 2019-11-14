@@ -1,6 +1,6 @@
 {application, lpr,
  [{description, "An ETS-backed process registry with an API that's a subset of ostinelli/syn"},
-  {vsn, "0.1.1"},
+  {vsn, "0.1.2"},
   {registered, []},
   {applications,
    [kernel,
