@@ -34,7 +34,7 @@ Build
 Test
 ----
 
-    $ rebar3 ct
+    $ rebar3 test
 
 License
 -------
