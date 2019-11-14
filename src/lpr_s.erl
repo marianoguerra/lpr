@@ -13,6 +13,9 @@
 -export([start_link/0, start_link/1, start_link/2]).
 -export([start_link_local/0, start_link_local/1, start_link_local/2]).
 
+-ignore_xref([start_link/0, start_link/1, start_link/2,
+              start_link_local/0, start_link_local/1, start_link_local/2]).
+
 % Callbacks
 -export([init/1,
          handle_call/3,

@@ -1,5 +1,5 @@
 -module(lpr_reg_ets).
--export([new/1, get/2, put/3, put_if_not_found/3, delete/2, dispose/1]).
+-export([new/1, get/2, put_if_not_found/3, delete/2, dispose/1]).
 
 new(Opts) ->
     TableName = case maps:get(table_name, Opts, nil) of
@@ -23,10 +23,6 @@ get(TableId, Key) ->
         [] -> {not_found, Key};
         [{_, Value}] -> {ok, Value}
     end.
-
-put(TableId, Key, Val) ->
-    true = ets:insert(TableId, {Key, Val}),
-    ok.
 
 put_if_not_found(TableId, Key, Val) ->
     case get(TableId, Key) of

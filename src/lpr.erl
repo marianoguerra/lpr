@@ -1,10 +1,16 @@
 -module(lpr).
--export([start_link/0, stop/1]).
+-export([start_link/0, start_link/1, stop/1]).
 -export([register/3, register/4, unregister/2, find_by_key/2, find_by_key/3,
          registry_count/1]).
 
+-ignore_xref([start_link/0, start_link/1, stop/1, register/3, register/4,
+              unregister/2, find_by_key/2, find_by_key/3, registry_count/1]).
+
 start_link() ->
     lpr_s:start_link().
+
+start_link(Args) ->
+    lpr_s:start_link(Args).
 
 stop(Pid) ->
     lpr_s:stop(Pid).
