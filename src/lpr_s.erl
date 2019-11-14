@@ -83,34 +83,11 @@ handle_call(stop, _From, State=#state{reg_ref=RegRef}) ->
     {stop, normal, ok, State};
 handle_call({register, Key, Pid, Meta}, _From, State=#state{reg_ref=RegRef,
                                                             count=Count}) ->
-    {R, NewCount} = case lpr_reg_ets:get(RegRef, reverse_key(Pid)) of
-                        {ok, #reverse_entry{key=_Key}} ->
-                            {{error, pid_already_registered}, Count};
-
-                        {not_found, _} ->
-                            RegEntry = #reg_entry{pid=Pid, meta=Meta},
-                            case lpr_reg_ets:put_if_not_found(RegRef, entry_key(Key), RegEntry) of
-                                ok ->
-                                    erlang:monitor(process, Pid),
-                                    ReverseEntry = #reverse_entry{key=Key},
-                                    lpr_reg_ets:put_if_not_found(RegRef, reverse_key(Pid),
-                                                                 ReverseEntry),
-                                    {ok, Count + 1};
-                                {error, {found, _}} ->
-                                    {{error, taken}, Count}
-                            end
-                    end,
+    {R, NewCount} = do_register(RegRef, Count, Key, Pid, Meta),
     {reply, R, State#state{count=NewCount}};
-handle_call({unregister, Key}, _From, State=#state{reg_ref=RegRef, count=Count}) ->
-    EntryKey = entry_key(Key),
-    {R, NewCount} = case lpr_reg_ets:get(RegRef, EntryKey) of
-                        {ok, #reg_entry{pid=Pid}} ->
-                            ok = lpr_reg_ets:delete(RegRef, EntryKey),
-                            ok = lpr_reg_ets:delete(RegRef, reverse_key(Pid)),
-                            {ok, Count - 1};
-                        {not_found, _} ->
-                            {{error, undefined}, Count}
-                    end,
+handle_call({unregister, Key}, _From,
+            State=#state{reg_ref=RegRef, count=Count}) ->
+    {R, NewCount} = do_unregister(RegRef, Count, Key),
     {reply, R, State#state{count=NewCount}};
 handle_call({find_by_key, Key, Opt}, _From, State=#state{reg_ref=RegRef}) ->
     R = case lpr_reg_ets:get(RegRef, entry_key(Key)) of
@@ -158,3 +135,36 @@ code_change(_OldVsn, State, _Extra) ->
 
 entry_key(Key) -> {reg_entry_key, Key}.
 reverse_key(Pid) -> {reg_entry_key_reverse, Pid}.
+
+do_register(RegRef, Count, Key, Pid, Meta) ->
+    case lpr_reg_ets:get(RegRef, reverse_key(Pid)) of
+        {ok, #reverse_entry{key=_Key}} ->
+            {{error, pid_already_registered}, Count};
+
+        {not_found, _} ->
+            RegEntry = #reg_entry{pid=Pid, meta=Meta},
+            PutRes = lpr_reg_ets:put_if_not_found(RegRef,
+                                                  entry_key(Key),
+                                                  RegEntry),
+            case PutRes of
+                ok ->
+                    erlang:monitor(process, Pid),
+                    ReverseEntry = #reverse_entry{key=Key},
+                    lpr_reg_ets:put_if_not_found(RegRef, reverse_key(Pid),
+                                                 ReverseEntry),
+                    {ok, Count + 1};
+                {error, {found, _}} ->
+                    {{error, taken}, Count}
+            end
+    end.
+
+do_unregister(RegRef, Count, Key) ->
+    EntryKey = entry_key(Key),
+    case lpr_reg_ets:get(RegRef, EntryKey) of
+        {ok, #reg_entry{pid=Pid}} ->
+            ok = lpr_reg_ets:delete(RegRef, EntryKey),
+            ok = lpr_reg_ets:delete(RegRef, reverse_key(Pid)),
+            {ok, Count - 1};
+        {not_found, _} ->
+            {{error, undefined}, Count}
+    end.

@@ -26,7 +26,7 @@ get(TableId, Key) ->
 
 put_if_not_found(TableId, Key, Val) ->
     case get(TableId, Key) of
-        {not_found, _} -> 
+        {not_found, _} ->
             true = ets:insert(TableId, {Key, Val}),
             ok;
         {ok, V} ->
